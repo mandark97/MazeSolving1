@@ -7,6 +7,7 @@
 import sys, pygame
 from pygame.locals import *
 import random
+from entities import *
 
 size_x = 32
 size_y = 32
@@ -187,51 +188,6 @@ class Robot(pygame.sprite.Sprite):
         self.change_y = 0
 
 
-class Wall(pygame.sprite.Sprite):
-    """ Wall the robot can run into. """
-    def __init__(self, x, y, width, height):
-        """ Constructor for the wall that the robot can run into. """
-        super().__init__()
-
-        # Make a black wall, of the size specified in the parameters
-        self.image = pygame.Surface([width, height])
-        self.image.fill(BLACK)
-
-        # Make our top-left corner the passed-in location.
-        self.rect = self.image.get_rect()
-        self.rect.y = y
-        self.rect.x = x
-
-class Space(pygame.sprite.Sprite):
-    """ Wall the robot can run into. """
-    def __init__(self, x, y, width, height):
-        """ Constructor for the wall that the robot can run into. """
-        super().__init__()
-
-        # Make a transparent wall, of the size specified in the parameters
-        self.image = pygame.Surface([width, height], pygame.SRCALPHA, 32)
-        self.image = self.image.convert_alpha()
-
-        # Make our top-left corner the passed-in location.
-        self.rect = self.image.get_rect()
-        self.rect.y = y
-        self.rect.x = x
-
-class Goal(pygame.sprite.Sprite):
-    """ Wall the robot can run into. """
-    def __init__(self, x, y, width, height):
-        """ Constructor for the wall that the robot can run into. """
-        # Call the parent's constructor
-        super().__init__()
-
-        # Make the goal, of the size specified in the parameters
-        self.image = pygame.Surface([width, height])
-        self.image.fill(GOAL)
-
-        # Make our top-left corner the passed-in location.
-        self.rect = self.image.get_rect()
-        self.rect.y = y
-        self.rect.x = x
 
 
 # Left-Hand Rule wall following algorithm
@@ -263,16 +219,7 @@ def LHRwallFollowing(robot, screen):
     #     robot.change_y += -SPEED
 
 
-def main():
-    pygame.init()
-    size = width, height = 640, 640
-    screen = pygame.display.set_mode(size)
-    pygame.display.set_caption('Maze Solving Project by William Z.')
-
-    background = pygame.Surface(screen.get_size())
-    background = background.convert()
-    background.fill(WHITE)
-
+def create_entities():
     # Make the walls. (x_pos, y_pos, width, height)
     wall_list = pygame.sprite.Group()
 
@@ -311,6 +258,30 @@ def main():
         robots.add(robot)
         all_sprite_list.add(robot)
 
+    return wall_list, goal_list, space_list, robots, all_sprite_list
+
+
+def init_game():
+    pygame.init()
+    size = width, height = 640, 640
+    screen = pygame.display.set_mode(size)
+    pygame.display.set_caption('Maze Solving Project by William Z.')
+
+    background = pygame.Surface(screen.get_size())
+    background = background.convert()
+    background.fill(WHITE)
+
+    return screen
+
+
+def move_robots(robots, screen, movement_function=LHRwallFollowing):
+    for robot in robots:
+        movement_function(robot, screen)
+
+def main():
+    screen = init_game()
+    _, _, _, robots, all_sprite_list = create_entities()
+
     clock = pygame.time.Clock()
 
     done = False
@@ -321,8 +292,7 @@ def main():
             if event.type == pygame.QUIT:
                 done = True
 
-        for robot in robots:
-            LHRwallFollowing(robot, screen)
+        move_robots(robots, screen, LHRwallFollowing)
 
         all_sprite_list.update()
 
