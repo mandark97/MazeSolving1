@@ -41,6 +41,13 @@ WHITE = (255, 255, 255)
 GREY = (200, 200, 200)
 BLUE = (50, 50, 255)
 
+DIRECTIONS = {
+    'left':(0, 32),
+    'right':(-32, 0),
+    'up': (32, 0),
+    'down':(-32, 0)
+}
+
 m = 21
 n = 21
 
@@ -76,9 +83,11 @@ maze = [    [1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],  # 0      y
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,1],  # 20
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,1]  ]  # 21
 
+visited = [[[] for cell in line] for line in maze]
+
 class Robot(pygame.sprite.Sprite):
 
-    def __init__(self, x, y, color=DAY9YELLOW):
+    def __init__(self, x, y, id, color=DAY9YELLOW):
         # Call the parent's constructor
         super().__init__()
 
@@ -101,6 +110,8 @@ class Robot(pygame.sprite.Sprite):
         self.walls = None
         self.goals = None
         self.space = None
+        self.path = []
+        self.id = id
 
     def update(self):
         """ Update the robot position. """
@@ -156,8 +167,6 @@ class Robot(pygame.sprite.Sprite):
             self.face = (self.face - 1) % 4
             self.lhs = (self.lhs - 1) % 4
 
-
-
         block_hit_list = pygame.sprite.spritecollide(self, self.walls, False)
         for block in block_hit_list:
 
@@ -184,6 +193,7 @@ class Robot(pygame.sprite.Sprite):
             pygame.quit()
             sys.exit(0)
 
+        visited[self.rect.x/32][self.rect.y/32].append(self.id)
         self.change_x = 0
         self.change_y = 0
 
@@ -247,8 +257,8 @@ def create_entities():
                 space_list.add(space)
                 all_sprite_list.add(space)
 
-    for k, color in COLORS.items():
-        robot = Robot(-64, 32, color=color)
+    for index, color in enumerate(COLORS.values()):
+        robot = Robot(-64, 32, index, color=color)
         robot.face = 1
         robot.lhs = 0
         robot.walls = wall_list
