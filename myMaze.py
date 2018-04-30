@@ -113,87 +113,23 @@ class Robot(pygame.sprite.Sprite):
         self.path = []
         self.id = id
 
+    def move(self, direction):
+        return (self.react.x + direction[0], self.react.y + direction[1])
+
     def update(self):
         """ Update the robot position. """
         # Move left/right=====
         self.rect.x += self.change_x
-
-        if((self.change_x<0) & (maze[int(self.rect.x/32)][int(self.rect.y/32)+1] != 1)):
-            print ("Going West, Turning Left")
-            self.face = (self.face - 1) % 4
-            self.lhs = (self.lhs - 1) % 4
-
-
-        if((self.change_x>0) & (maze[int(self.rect.x/32)][int(self.rect.y/32)-1] != 1)):
-            print ("Going East, Turning Left")
-            self.face = (self.face - 1) % 4
-            self.lhs = (self.lhs - 1) % 4
-
-
-        block_hit_list = pygame.sprite.spritecollide(self, self.walls, False)
-        for block in block_hit_list:
-
-            # Wall to the east
-            if ((self.change_x > 0) & (self.face %4 == 1)):
-                if((maze[int(self.rect.x/32)][int(self.rect.y/32)] == 0)):
-                    print("what")
-                self.rect.x -= self.change_x
-                print ("You've hit a wall at the East")
-                self.rect.right = block.rect.left
-                print ("Turning Right")
-                self.face = (1 + self.face ) % 4
-                self.lhs = (1 + self.lhs) % 4
-
-            # Wall to the west
-            elif ((self.change_x < 0) & (self.face %4 ==3)):
-                self.rect.x -= self.change_x
-                print ("You've hit a wall at the West!")
-                self.rect.left = block.rect.right
-                print ("Turning Right")
-                self.face = (self.face + 1) % 4
-                self.lhs = (1 + self.lhs) % 4
-
-
         self.rect.y += self.change_y
+        visited[int(self.rect.x/32)][int(self.rect.y/32)].append(self.id)
 
-        if((self.change_y>0) & (maze[int(self.rect.x/32)+1][int(self.rect.y/32)] != 1)):
-            print ("Going South, Turning Left")
-            self.face = (self.face - 1) % 4
-            self.lhs = (self.lhs - 1) % 4
-
-
-        if((self.change_y<0) & (maze[int(self.rect.x/32)-1][int(self.rect.y/32)] != 1)):
-            print ("Going North, Turning Left")
-            self.face = (self.face - 1) % 4
-            self.lhs = (self.lhs - 1) % 4
-
-        block_hit_list = pygame.sprite.spritecollide(self, self.walls, False)
-        for block in block_hit_list:
-
-            # Wall to the South
-            if ((self.change_y > 0) & (self.face %4 == 2)):
-                self.rect.y -= self.change_y
-                print ("You've hit a wall at the South!")
-                self.rect.bottom = block.rect.top
-                print ("Turning Right")
-                self.face = (1 + self.face ) % 4
-                self.lhs = (1 + self.lhs) % 4
-
-            # Wall to the North
-            elif ((self.change_y < 0) & (self.face %4 == 0)):
-                self.rect.y -= self.change_y
-                print ("You've hit a wall at the North!")
-                self.rect.top = block.rect.bottom
-                print ("Turning Right")
-                self.face = (self.face + 1) % 4
-                self.lhs = (1 + self.lhs) % 4
+        self.path.append((int(self.rect.x/32), int(self.rect.y/32)))
 
         if(self.rect.x == goal_x) & (self.rect.y == goal_y):
             print("You've solved the maze! Hooray!!!")
             pygame.quit()
             sys.exit(0)
 
-        visited[self.rect.x/32][self.rect.y/32].append(self.id)
         self.change_x = 0
         self.change_y = 0
 
@@ -202,12 +138,33 @@ class Robot(pygame.sprite.Sprite):
 
 # Left-Hand Rule wall following algorithm
 def LHRwallFollowing(robot, screen):
-    face = robot.face # 0 is north, 1 is east, 2 is south, 3 is west
-    LHS = robot.lhs
-    position = robot
+    directions = robot.get_directions()
 
-    robot.change_x = random.choice([32, -32])
-    robot.change_y = random.choice([32, -32])
+    best_directions = []
+    good_directions = []
+
+    for direction in directions:
+        new_pos = robot.move(DIRECTIONS[direction])
+        if len(visited[new_pos[0]][new_pos[1]]) == 0:
+            best_directions.append(direction)
+        elif robot.id not in visited[new_pos[0]][new_pos[1]]:
+            good_directions.append(direction)
+
+    if len(best_directions) > 0:
+        direction = random.choice(best_directions)
+    elif len(good_directions) > 0:
+        direction = random.choice(good_directions)
+    else:
+        robot.rect.x = robot.path[-1][0]
+        robot.rect.y = robot.path[-1][1]
+        return
+
+    robot.change_x = DIRECTIONS[direction][0]
+    robot.change_y = DIRECTIONS[direction][1]
+
+
+    # robot.change_x = random.choice([32, -32])
+    # robot.change_y = random.choice([32, -32])
     # #lhs is north
     # if(LHS%4 == 0):
     #     print("Current Position: (", int((robot.rect.x/32)+2),", ", int((robot.rect.y/32)-1), ") --Going East")
@@ -227,6 +184,11 @@ def LHRwallFollowing(robot, screen):
     # if(LHS%4 == 3):
     #     print("Current Position: (",  int((robot.rect.x/32)+2), ", ", int((robot.rect.y/32)-1), ") --Going North")
     #     robot.change_y += -SPEED
+
+
+def move_robots(robots, screen, movement_function=LHRwallFollowing):
+    for robot in robots:
+        movement_function(robot, screen)
 
 
 def create_entities():
@@ -283,10 +245,6 @@ def init_game():
 
     return screen
 
-
-def move_robots(robots, screen, movement_function=LHRwallFollowing):
-    for robot in robots:
-        movement_function(robot, screen)
 
 def main():
     screen = init_game()
