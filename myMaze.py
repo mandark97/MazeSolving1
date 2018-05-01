@@ -42,10 +42,10 @@ GREY = (200, 200, 200)
 BLUE = (50, 50, 255)
 
 DIRECTIONS = {
-    'left':(0, 32),
-    'right':(-32, 0),
-    'up': (32, 0),
-    'down':(-32, 0)
+    'up':(0, 32),
+    'down':(0, -32),
+    'right': (32, 0),
+    'left':(-32, 0)
 }
 
 m = 21
@@ -113,8 +113,24 @@ class Robot(pygame.sprite.Sprite):
         self.path = []
         self.id = id
 
+    def get_directions(self):
+        directions = []
+
+        position_x, position_y = int(self.rect.x/32), int(self.rect.y/32)
+
+        if maze[position_x][position_y + 1] in [0,2]:
+           directions.append('up')
+        if maze[position_x][position_y - 1] in [0,2]:
+            directions.append('down')
+        if maze[position_x + 1][position_y] in [0,2]:
+            directions.append('right')
+        if maze[position_x - 1][position_y] in [0,2]:
+            directions.append('left')
+
+        return directions
+
     def move(self, direction):
-        return (self.react.x + direction[0], self.react.y + direction[1])
+        return (self.rect.x + direction[0], self.rect.y + direction[1])
 
     def update(self):
         """ Update the robot position. """
@@ -126,7 +142,6 @@ class Robot(pygame.sprite.Sprite):
         self.path.append((int(self.rect.x/32), int(self.rect.y/32)))
 
         if(self.rect.x == goal_x) & (self.rect.y == goal_y):
-            print("You've solved the maze! Hooray!!!")
             pygame.quit()
             sys.exit(0)
 
@@ -145,9 +160,9 @@ def LHRwallFollowing(robot, screen):
 
     for direction in directions:
         new_pos = robot.move(DIRECTIONS[direction])
-        if len(visited[new_pos[0]][new_pos[1]]) == 0:
+        if len(visited[int(new_pos[0]/32)][int(new_pos[1]/32)]) == 0:
             best_directions.append(direction)
-        elif robot.id not in visited[new_pos[0]][new_pos[1]]:
+        elif robot.id not in visited[int(new_pos[0]/32)][int(new_pos[1]/32)]:
             good_directions.append(direction)
 
     if len(best_directions) > 0:
@@ -155,8 +170,10 @@ def LHRwallFollowing(robot, screen):
     elif len(good_directions) > 0:
         direction = random.choice(good_directions)
     else:
-        robot.rect.x = robot.path[-1][0]
-        robot.rect.y = robot.path[-1][1]
+        robot.path.pop()
+        robot.rect.x = robot.path[-1][0]*32
+        robot.rect.y = robot.path[-1][1]*32
+        robot.path.pop()
         return
 
     robot.change_x = DIRECTIONS[direction][0]
@@ -220,7 +237,7 @@ def create_entities():
                 all_sprite_list.add(space)
 
     for index, color in enumerate(COLORS.values()):
-        robot = Robot(-64, 32, index, color=color)
+        robot = Robot(32, 32, index, color=color)
         robot.face = 1
         robot.lhs = 0
         robot.walls = wall_list
