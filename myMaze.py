@@ -79,9 +79,9 @@ maze = [    [1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],  # 0      y
             [1,1,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,1,1,1],  # 16
             [1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,1,1,1],  # 17
             [1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,1,1,1],  # 18
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,1],  # 19
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,1],  # 20
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,1]  ]  # 21
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],  # 19
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],  # 20
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]  ]  # 21
 
 visited = [[[] for cell in line] for line in maze]
 
@@ -141,9 +141,9 @@ class Robot(pygame.sprite.Sprite):
 
         self.path.append((int(self.rect.x/32), int(self.rect.y/32)))
 
-        if(self.rect.x == goal_x) & (self.rect.y == goal_y):
-            pygame.quit()
-            sys.exit(0)
+        # if(self.rect.x == goal_x) & (self.rect.y == goal_y):
+        #     pygame.quit()
+        #     sys.exit(0)
 
         self.change_x = 0
         self.change_y = 0
@@ -178,29 +178,6 @@ def LHRwallFollowing(robot, screen):
 
     robot.change_x = DIRECTIONS[direction][0]
     robot.change_y = DIRECTIONS[direction][1]
-
-
-    # robot.change_x = random.choice([32, -32])
-    # robot.change_y = random.choice([32, -32])
-    # #lhs is north
-    # if(LHS%4 == 0):
-    #     print("Current Position: (", int((robot.rect.x/32)+2),", ", int((robot.rect.y/32)-1), ") --Going East")
-    #     robot.change_x += SPEED
-
-    # #lhs is east
-    # if(LHS%4 == 1):
-    #     print("Current Position: (", int((robot.rect.x/32)+2),", ", int((robot.rect.y/32)-1), ") --Going South")
-    #     robot.change_y += SPEED
-
-    # #lhs is south
-    # if(LHS%4 == 2):
-    #     print("Current Position: (",  int((robot.rect.x/32)+2),", ", int((robot.rect.y/32)-1), ") --Going West")
-    #     robot.change_x += -SPEED
-
-    # #lhs is west
-    # if(LHS%4 == 3):
-    #     print("Current Position: (",  int((robot.rect.x/32)+2), ", ", int((robot.rect.y/32)-1), ") --Going North")
-    #     robot.change_y += -SPEED
 
 
 def move_robots(robots, screen, movement_function=LHRwallFollowing):
@@ -254,7 +231,6 @@ def init_game():
     pygame.init()
     size = width, height = 640, 640
     screen = pygame.display.set_mode(size)
-    pygame.display.set_caption('Maze Solving Project by William Z.')
 
     background = pygame.Surface(screen.get_size())
     background = background.convert()
@@ -263,33 +239,50 @@ def init_game():
     return screen
 
 
+def create_visited(visited_cells):
+    visited_cells.empty()
+    for i, line in enumerate(visited):
+        for j, cell in enumerate(line):
+            if len(cell) > 0:
+                visited_cells.add(VisitedLocation(i*32, j*32, Size, Size))
+
+
+def all_visited():
+    for i, line in enumerate(visited):
+        for j, cell in enumerate(line):
+            if len(cell) == 0 and maze[i][j] == 0:
+                return False
+    pygame.quit()
+    return True
+
 def main():
     screen = init_game()
     _, _, _, robots, all_sprite_list = create_entities()
-
+    visited_cells = pygame.sprite.Group()
     clock = pygame.time.Clock()
-
-    done = False
-
-    while not done:
+    iterations = 0
+    while not all_visited():
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                done = True
+                break
 
         move_robots(robots, screen, LHRwallFollowing)
 
         all_sprite_list.update()
 
         screen.fill(GREY)
-
+        create_visited(visited_cells)
+        visited_cells.draw(screen)
         all_sprite_list.draw(screen)
 
         pygame.display.flip()
 
         clock.tick(60)
         pygame.time.wait(timer)
+        iterations +=1
 
+    print('{0} iterations to finish'.format(iterations))
     pygame.quit()
 
 if __name__ == '__main__':
